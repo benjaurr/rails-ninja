@@ -146,6 +146,16 @@ Every mounted API automatically serves:
 - `GET /openapi.json` -- OpenAPI 3.0 spec
 - `GET /docs` -- Swagger UI
 
+## Demo
+
+Run the included example to see Swagger UI in action:
+
+```
+bundle exec rackup examples/config.ru
+```
+
+Then open http://localhost:9292 to browse the Public and Admin API docs.
+
 ## Dependencies
 
 - `rack`
