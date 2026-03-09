@@ -56,6 +56,20 @@ module RailsNinja
         @_version
       end
 
+      def docs(enabled = nil)
+        if enabled.nil?
+          @_docs_enabled
+        else
+          @_docs_enabled = enabled
+        end
+      end
+
+      def _docs_enabled?
+        return @_docs_enabled unless @_docs_enabled.nil?
+
+        true
+      end
+
       # Mount sub-APIs
       def mount(api_class, prefix: "/")
         _mounted_apis << { api_class: api_class, prefix: prefix }

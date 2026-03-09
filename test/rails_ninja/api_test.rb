@@ -113,6 +113,37 @@ class ApiTest < Minitest::Test
     assert_equal 1, child._endpoints.size
   end
 
+  def test_docs_enabled_by_default
+    api = Class.new(RailsNinja::API)
+    assert api._docs_enabled?
+  end
+
+  def test_docs_can_be_disabled
+    api = Class.new(RailsNinja::API) do
+      docs false
+    end
+    refute api._docs_enabled?
+  end
+
+  def test_docs_disabled_hides_endpoints
+    api = Class.new(RailsNinja::API) do
+      docs false
+
+      get "/items"
+      def list_items
+        []
+      end
+    end
+
+    env = Rack::MockRequest.env_for("/docs", method: "GET")
+    status, _, _ = api.call(env)
+    assert_equal 404, status
+
+    env = Rack::MockRequest.env_for("/openapi.json", method: "GET")
+    status, _, _ = api.call(env)
+    assert_equal 404, status
+  end
+
   def test_rack_interface
     api = Class.new(RailsNinja::API) do
       get "/hello"

@@ -11,8 +11,10 @@ module RailsNinja
       path = env["PATH_INFO"] || "/"
       verb = env["REQUEST_METHOD"]
 
-      return serve_openapi_spec if path == "/openapi.json" && verb == "GET"
-      return serve_swagger_ui if path == "/docs" && verb == "GET"
+      if @api_class._docs_enabled?
+        return serve_openapi_spec if path == "/openapi.json" && verb == "GET"
+        return serve_swagger_ui if path == "/docs" && verb == "GET"
+      end
 
       result = @router.match(verb, path)
       return Response.error("Not Found", status: 404) unless result
