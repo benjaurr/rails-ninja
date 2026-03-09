@@ -70,6 +70,11 @@ module RailsNinja
         true
       end
 
+      # Pull in endpoints from an Action class
+      def action(action_class)
+        action_class._endpoints.each { |ep| _endpoints << ep }
+      end
+
       # Mount sub-APIs
       def mount(api_class, prefix: "/")
         _mounted_apis << { api_class: api_class, prefix: prefix }

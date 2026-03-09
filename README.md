@@ -97,6 +97,49 @@ class ItemOut < RailsNinja::Schema::Base
 end
 ```
 
+### Actions (one file per endpoint)
+
+For larger APIs, define each endpoint in its own file:
+
+```ruby
+# app/api/endpoints/list_users.rb
+class ListUsers < RailsNinja::Action
+  schema :UserOut do
+    field :id, Integer
+    field :name, String
+  end
+
+  get "/users", response: [UserOut]
+  def handle
+    User.all
+  end
+end
+
+# app/api/endpoints/create_user.rb
+class CreateUser < RailsNinja::Action
+  schema :UserIn do
+    field :name, String
+    field :email, String
+  end
+
+  post "/users", request: UserIn
+  def handle
+    User.create!(params)
+  end
+end
+
+# app/api/my_api.rb
+class MyApi < RailsNinja::API
+  title "My API"
+  version "1.0"
+
+  action ListUsers
+  action CreateUser
+end
+```
+
+Each Action is self-contained with its own schemas and handler. The API class pulls them in with `action`.
+
 ### Multiple Independent APIs
 
 Mount separate API classes for independent groups, each with their own docs:

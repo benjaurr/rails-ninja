@@ -18,6 +18,7 @@ require_relative "rails_ninja/openapi/schema_ref"
 require_relative "rails_ninja/openapi/generator"
 require_relative "rails_ninja/swagger/ui"
 require_relative "rails_ninja/api"
+require_relative "rails_ninja/action"
 
 require_relative "rails_ninja/railtie" if defined?(Rails::Railtie)
 

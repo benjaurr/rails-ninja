@@ -68,6 +68,50 @@ class AdminApi < RailsNinja::API
   end
 end
 
+# --- Action-based API (one file per endpoint) ---
+
+class ListOrders < RailsNinja::Action
+  schema :OrderOut do
+    field :id, Integer
+    field :item, String
+    field :quantity, Integer
+  end
+
+  get "/orders", response: [OrderOut]
+  def handle
+    [
+      { id: 1, item: "Widget", quantity: 2 },
+      { id: 2, item: "Gadget", quantity: 1 }
+    ]
+  end
+end
+
+class CreateOrder < RailsNinja::Action
+  schema :OrderIn do
+    field :item, String
+    field :quantity, Integer
+  end
+
+  schema :OrderOut do
+    field :id, Integer
+    field :item, String
+    field :quantity, Integer
+  end
+
+  post "/orders", request: OrderIn, response: OrderOut
+  def handle
+    { id: 3, item: params[:item], quantity: params[:quantity] }
+  end
+end
+
+class OrdersApi < RailsNinja::API
+  title "Orders API (Actions)"
+  version "1.0"
+
+  action ListOrders
+  action CreateOrder
+end
+
 app = Rack::Builder.new do
   map "/api" do
     run PublicApi
@@ -75,6 +119,10 @@ app = Rack::Builder.new do
 
   map "/admin" do
     run AdminApi
+  end
+
+  map "/orders" do
+    run OrdersApi
   end
 
   map "/" do
@@ -86,8 +134,9 @@ app = Rack::Builder.new do
         <body style="font-family: sans-serif; max-width: 600px; margin: 80px auto;">
           <h1>Rails Ninja Demo</h1>
           <ul>
-            <li><a href="/api/docs">Public API Docs</a></li>
-            <li><a href="/admin/docs">Admin API Docs</a></li>
+            <li><a href="/api/docs">Public API Docs</a> (inline style)</li>
+            <li><a href="/admin/docs">Admin API Docs</a> (inline style)</li>
+            <li><a href="/orders/docs">Orders API Docs</a> (action style)</li>
           </ul>
         </body>
         </html>
