@@ -97,6 +97,48 @@ class ItemOut < RailsNinja::Schema::Base
 end
 ```
 
+### Multiple Independent APIs
+
+Mount separate API classes for independent groups, each with their own docs:
+
+```ruby
+class PublicApi < RailsNinja::API
+  title "Public API"
+  version "1.0"
+
+  mount UsersApi, prefix: "/users"
+  mount ProductsApi, prefix: "/products"
+end
+
+class InternalApi < RailsNinja::API
+  title "Internal API"
+  version "1.0"
+
+  mount MetricsApi, prefix: "/metrics"
+end
+
+class AdminApi < RailsNinja::API
+  title "Admin API"
+  version "1.0"
+
+  mount SettingsApi, prefix: "/settings"
+end
+
+# config/routes.rb
+Rails.application.routes.draw do
+  mount PublicApi   => "/api"
+  mount InternalApi => "/internal"
+  mount AdminApi    => "/admin"
+end
+```
+
+Each group gets its own isolated docs:
+- `/api/docs`, `/api/openapi.json`
+- `/internal/docs`, `/internal/openapi.json`
+- `/admin/docs`, `/admin/openapi.json`
+
+Routes and schemas do not leak between groups.
+
 ### OpenAPI Documentation
 
 Every mounted API automatically serves:

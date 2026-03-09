@@ -27,7 +27,9 @@ module RailsNinja
       private
 
       def read_attribute(obj, name)
-        if obj.respond_to?(name)
+        if obj.is_a?(Hash)
+          obj[name] || obj[name.to_s]
+        elsif obj.respond_to?(name)
           obj.public_send(name)
         elsif obj.respond_to?(:[])
           obj[name] || obj[name.to_s]
