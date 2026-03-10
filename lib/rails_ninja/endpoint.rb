@@ -12,7 +12,7 @@ module RailsNinja
       @response_schema = response
       @tags = tags || [api_class.name&.gsub(/Api$/, "")].compact
       @summary = summary || handler.to_s.tr("_", " ").capitalize
-      @header_params = parse_headers(headers)
+      @header_params = merge_headers(api_class._headers, headers)
     end
 
     def call(api_instance, request)
@@ -39,6 +39,15 @@ module RailsNinja
       raise ValidationError, errors if errors.any?
 
       request.validated_data = coerced
+    end
+
+    def merge_headers(class_headers, endpoint_headers)
+      parsed_class = parse_headers(class_headers)
+      parsed_endpoint = parse_headers(endpoint_headers)
+
+      # Endpoint-level headers override class-level headers with the same name
+      merged = parsed_class.reject { |ch| parsed_endpoint.any? { |eh| eh[:name] == ch[:name] } }
+      merged + parsed_endpoint
     end
 
     def parse_headers(headers)

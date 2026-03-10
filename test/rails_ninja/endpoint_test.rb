@@ -243,4 +243,48 @@ class EndpointTest < Minitest::Test
 
     assert_equal [], endpoint.header_params
   end
+
+  def test_class_level_headers_applied_to_endpoint
+    api_class = Class.new(RailsNinja::API) do
+      headers "X-API-KEY", "X-TENANT-ID"
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/items", handler: :list_items, api_class: api_class
+    )
+
+    assert_equal 2, endpoint.header_params.size
+    assert_equal "X-API-KEY", endpoint.header_params[0][:name]
+    assert_equal "X-TENANT-ID", endpoint.header_params[1][:name]
+  end
+
+  def test_class_level_headers_merged_with_endpoint_headers
+    api_class = Class.new(RailsNinja::API) do
+      headers "X-API-KEY"
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/items", handler: :list_items, api_class: api_class,
+      headers: ["X-REQUEST-ID"]
+    )
+
+    assert_equal 2, endpoint.header_params.size
+    assert_equal "X-API-KEY", endpoint.header_params[0][:name]
+    assert_equal "X-REQUEST-ID", endpoint.header_params[1][:name]
+  end
+
+  def test_endpoint_headers_override_class_level_headers
+    api_class = Class.new(RailsNinja::API) do
+      headers({ name: "X-API-KEY", required: true })
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/items", handler: :list_items, api_class: api_class,
+      headers: [{ name: "X-API-KEY", required: false }]
+    )
+
+    assert_equal 1, endpoint.header_params.size
+    assert_equal "X-API-KEY", endpoint.header_params[0][:name]
+    assert_equal false, endpoint.header_params[0][:required]
+  end
 end

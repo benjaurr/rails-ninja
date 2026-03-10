@@ -70,6 +70,18 @@ module RailsNinja
         true
       end
 
+      def headers(*args)
+        if args.any?
+          @_headers = args.flatten
+        else
+          @_headers
+        end
+      end
+
+      def _headers
+        @_headers || []
+      end
+
       # Pull in endpoints from an Action class
       def action(action_class)
         action_class._endpoints.each { |ep| _endpoints << ep }
