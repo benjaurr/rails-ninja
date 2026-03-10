@@ -7,5 +7,9 @@ module RailsNinja
         app.config.eager_load_paths << api_path.to_s
       end
     end
+
+    rake_tasks do
+      load File.expand_path("tasks.rake", __dir__)
+    end
   end
 end

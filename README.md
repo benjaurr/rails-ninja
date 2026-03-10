@@ -189,6 +189,28 @@ Every mounted API automatically serves:
 - `GET /openapi.json` -- OpenAPI 3.0 spec
 - `GET /docs` -- Swagger UI
 
+#### Generating Static Spec Files
+
+You can generate static OpenAPI JSON files for all registered APIs using a Rake task:
+
+```bash
+# Writes one file per API to public/openapi/ (default)
+bundle exec rake rails_ninja:openapi:generate
+
+# Custom output directory
+bundle exec rake rails_ninja:openapi:generate OUTPUT=docs/api
+```
+
+Files are named after the API class in snake_case (e.g. `PublicApi` → `public_api.json`, `AdminApi` → `admin_api.json`). The output directory is created automatically if it doesn't exist.
+
+This is useful for committing specs to version control, feeding into client code generators, or CI diffing to catch API changes.
+
+For non-Rails (plain Rack) apps, use the Ruby helper directly:
+
+```ruby
+RailsNinja.generate_openapi(output: "docs/api")
+```
+
 ## Demo
 
 Run the included example to see Swagger UI in action:

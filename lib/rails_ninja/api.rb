@@ -123,6 +123,7 @@ module RailsNinja
         subclass.instance_variable_set(:@_endpoints, [])
         subclass.instance_variable_set(:@_schemas, (_schemas || {}).dup)
         subclass.instance_variable_set(:@_mounted_apis, [])
+        RailsNinja.registered_apis << subclass unless subclass <= RailsNinja::Action
       end
 
       # Rack interface — makes this class mountable
