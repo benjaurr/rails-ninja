@@ -154,4 +154,14 @@ class ApiTest < Minitest::Test
 
     assert api.respond_to?(:call)
   end
+
+  def test_responds_to_make_response
+    api = Class.new(RailsNinja::API)
+    assert api.respond_to?(:make_response!)
+  end
+
+  def test_responds_to_dispatch
+    api = Class.new(RailsNinja::API)
+    assert api.respond_to?(:dispatch)
+  end
 end

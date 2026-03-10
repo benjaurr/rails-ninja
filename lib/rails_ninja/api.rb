@@ -131,6 +131,21 @@ module RailsNinja
         @_rack_app ||= Middleware.new(api_class: self)
         @_rack_app.call(env)
       end
+
+      # Rails controller dispatch compatibility — required when mounted inside
+      # a Rails `scope` block, which routes through ActionDispatch::Routing::
+      # RouteSet::Dispatcher instead of calling the Rack app directly.
+      def make_response!(request)
+        ActionDispatch::Response.new.tap { |res| res.request = request }
+      end
+
+      def dispatch(action, req, res)
+        status, headers, body = call(req.env)
+        res.status = status
+        headers.each { |k, v| res.headers[k] = v }
+        res.body = body
+        res
+      end
     end
   end
 end
