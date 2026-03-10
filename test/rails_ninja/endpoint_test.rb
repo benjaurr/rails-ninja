@@ -61,6 +61,88 @@ class EndpointTest < Minitest::Test
     assert_equal "Widget", parsed[:name]
   end
 
+  def test_rack_response_passthrough
+    api_class = Class.new(RailsNinja::API) do
+      define_method(:unauthorized) do
+        RailsNinja::Response.error("Unauthorized", status: 401)
+      end
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get,
+      path: "/secret",
+      handler: :unauthorized,
+      api_class: api_class,
+      response: Class.new(RailsNinja::Schema::Base) { field :id, Integer }
+    )
+
+    env = Rack::MockRequest.env_for("/secret", method: "GET")
+    request = RailsNinja::Request.new(env, {})
+    api_instance = api_class.new(request)
+
+    status, headers, body = endpoint.call(api_instance, request)
+
+    assert_equal 401, status
+    assert_equal "application/json", headers["content-type"]
+    parsed = MultiJson.load(body.first, symbolize_keys: true)
+    assert_equal "Unauthorized", parsed[:error]
+  end
+
+  def test_rack_response_passthrough_without_schema
+    api_class = Class.new(RailsNinja::API) do
+      define_method(:not_found) do
+        RailsNinja::Response.error("Not found", status: 404)
+      end
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get,
+      path: "/items/:id",
+      handler: :not_found,
+      api_class: api_class
+    )
+
+    env = Rack::MockRequest.env_for("/items/999", method: "GET")
+    request = RailsNinja::Request.new(env, { id: "999" })
+    api_instance = api_class.new(request)
+
+    status, _headers, body = endpoint.call(api_instance, request)
+
+    assert_equal 404, status
+    parsed = MultiJson.load(body.first, symbolize_keys: true)
+    assert_equal "Not found", parsed[:error]
+  end
+
+  def test_hash_return_not_treated_as_rack_response
+    schema = Class.new(RailsNinja::Schema::Base) do
+      field :id, Integer
+    end
+
+    api_class = Class.new(RailsNinja::API) do
+      define_method(:get_item) do
+        { id: 42 }
+      end
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get,
+      path: "/items/:id",
+      handler: :get_item,
+      api_class: api_class,
+      response: schema
+    )
+
+    env = Rack::MockRequest.env_for("/items/42", method: "GET")
+    request = RailsNinja::Request.new(env, { id: "42" })
+    api_instance = api_class.new(request)
+
+    status, _headers, body = endpoint.call(api_instance, request)
+
+    assert_equal 200, status
+    parsed = MultiJson.load(body.first, symbolize_keys: true)
+    assert_equal 42, parsed[:id]
+  end
+
   def test_header_params_from_strings
     endpoint = RailsNinja::Endpoint.new(
       verb: :get,

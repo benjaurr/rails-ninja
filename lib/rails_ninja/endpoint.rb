@@ -53,7 +53,12 @@ module RailsNinja
       end.compact
     end
 
+    def rack_response?(result)
+      result.is_a?(Array) && result.length == 3 && result[0].is_a?(Integer)
+    end
+
     def serialize_response(result)
+      return result if rack_response?(result)
       return Response.json(result) unless response_schema
 
       body = if response_is_array?
