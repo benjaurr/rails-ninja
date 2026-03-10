@@ -57,8 +57,13 @@ module RailsNinja
       result.is_a?(Array) && result.length == 3 && result[0].is_a?(Integer)
     end
 
+    def status_code?(result)
+      result.is_a?(Integer) && result.between?(100, 599)
+    end
+
     def serialize_response(result)
       return result if rack_response?(result)
+      return Response.json(nil, status: result) if status_code?(result)
       return Response.json(result) unless response_schema
 
       body = if response_is_array?

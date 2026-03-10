@@ -143,6 +143,60 @@ class EndpointTest < Minitest::Test
     assert_equal 42, parsed[:id]
   end
 
+  def test_bare_status_code_401
+    api_class = Class.new(RailsNinja::API) do
+      define_method(:unauthorized) { 401 }
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/secret", handler: :unauthorized, api_class: api_class
+    )
+
+    env = Rack::MockRequest.env_for("/secret", method: "GET")
+    request = RailsNinja::Request.new(env, {})
+    status, headers, body = endpoint.call(api_class.new(request), request)
+
+    assert_equal 401, status
+    assert_equal "application/json", headers["content-type"]
+    assert_equal "null", body.first
+  end
+
+  def test_bare_status_code_204
+    api_class = Class.new(RailsNinja::API) do
+      define_method(:no_content) { 204 }
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :delete, path: "/items/:id", handler: :no_content, api_class: api_class
+    )
+
+    env = Rack::MockRequest.env_for("/items/1", method: "DELETE")
+    request = RailsNinja::Request.new(env, { id: "1" })
+    status, _headers, _body = endpoint.call(api_class.new(request), request)
+
+    assert_equal 204, status
+  end
+
+  def test_bare_status_code_not_confused_with_integer_data
+    schema = Class.new(RailsNinja::Schema::Base) { field :count, Integer }
+
+    api_class = Class.new(RailsNinja::API) do
+      define_method(:get_count) { { count: 200 } }
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/count", handler: :get_count, api_class: api_class, response: schema
+    )
+
+    env = Rack::MockRequest.env_for("/count", method: "GET")
+    request = RailsNinja::Request.new(env, {})
+    status, _headers, body = endpoint.call(api_class.new(request), request)
+
+    assert_equal 200, status
+    parsed = MultiJson.load(body.first, symbolize_keys: true)
+    assert_equal 200, parsed[:count]
+  end
+
   def test_header_params_from_strings
     endpoint = RailsNinja::Endpoint.new(
       verb: :get,
