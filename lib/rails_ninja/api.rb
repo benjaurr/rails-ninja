@@ -82,6 +82,14 @@ module RailsNinja
         @_headers || []
       end
 
+      def before_action(method_name = nil, &block)
+        _before_actions << (method_name || block)
+      end
+
+      def _before_actions
+        @_before_actions ||= []
+      end
+
       # Pull in endpoints from an Action class
       def action(action_class)
         action_class._endpoints.each { |ep| _endpoints << ep }
@@ -135,6 +143,7 @@ module RailsNinja
         subclass.instance_variable_set(:@_endpoints, [])
         subclass.instance_variable_set(:@_schemas, (_schemas || {}).dup)
         subclass.instance_variable_set(:@_mounted_apis, [])
+        subclass.instance_variable_set(:@_before_actions, (_before_actions || []).dup)
         RailsNinja.registered_apis << subclass unless subclass <= RailsNinja::Action
       end
 

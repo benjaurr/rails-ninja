@@ -16,6 +16,9 @@ module RailsNinja
     end
 
     def call(api_instance, request)
+      halted = run_before_actions(api_instance)
+      return halted if halted
+
       validate_request!(request) if request_schema
 
       result = api_instance.public_send(handler)
@@ -32,6 +35,21 @@ module RailsNinja
     end
 
     private
+
+    def run_before_actions(api_instance)
+      api_class._before_actions.each do |action|
+        result = if action.is_a?(Symbol)
+          api_instance.public_send(action)
+        else
+          api_instance.instance_exec(&action)
+        end
+
+        return result if rack_response?(result)
+        return serialize_response(result) if status_code?(result)
+      end
+
+      nil
+    end
 
     def validate_request!(request)
       schema = request_schema

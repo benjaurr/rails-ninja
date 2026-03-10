@@ -287,4 +287,89 @@ class EndpointTest < Minitest::Test
     assert_equal "X-API-KEY", endpoint.header_params[0][:name]
     assert_equal false, endpoint.header_params[0][:required]
   end
+
+  def test_before_action_with_method_name
+    api_class = Class.new(RailsNinja::API) do
+      before_action :check_auth
+
+      define_method(:check_auth) do
+        RailsNinja::Response.error("Unauthorized", status: 401) unless request.headers["Api-Key"] == "secret"
+      end
+
+      define_method(:list_items) { [{ id: 1 }] }
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/items", handler: :list_items, api_class: api_class
+    )
+
+    # Without the right header — halted
+    env = Rack::MockRequest.env_for("/items", method: "GET")
+    req = RailsNinja::Request.new(env, {})
+    status, _, body = endpoint.call(api_class.new(req), req)
+    assert_equal 401, status
+    assert_equal "Unauthorized", MultiJson.load(body.first, symbolize_keys: true)[:error]
+
+    # With the right header — passes through
+    env = Rack::MockRequest.env_for("/items", method: "GET", "HTTP_API_KEY" => "secret")
+    req = RailsNinja::Request.new(env, {})
+    status, _, body = endpoint.call(api_class.new(req), req)
+    assert_equal 200, status
+  end
+
+  def test_before_action_with_block
+    api_class = Class.new(RailsNinja::API) do
+      before_action { 403 }
+
+      define_method(:list_items) { [{ id: 1 }] }
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/items", handler: :list_items, api_class: api_class
+    )
+
+    env = Rack::MockRequest.env_for("/items", method: "GET")
+    req = RailsNinja::Request.new(env, {})
+    status, _, _ = endpoint.call(api_class.new(req), req)
+    assert_equal 403, status
+  end
+
+  def test_before_action_passes_when_nil_returned
+    api_class = Class.new(RailsNinja::API) do
+      before_action :noop
+
+      define_method(:noop) { nil }
+      define_method(:list_items) { { ok: true } }
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/items", handler: :list_items, api_class: api_class
+    )
+
+    env = Rack::MockRequest.env_for("/items", method: "GET")
+    req = RailsNinja::Request.new(env, {})
+    status, _, body = endpoint.call(api_class.new(req), req)
+    assert_equal 200, status
+    assert_equal true, MultiJson.load(body.first, symbolize_keys: true)[:ok]
+  end
+
+  def test_multiple_before_actions_halt_on_first_failure
+    api_class = Class.new(RailsNinja::API) do
+      before_action :first_check
+      before_action :second_check
+
+      define_method(:first_check) { nil }
+      define_method(:second_check) { 503 }
+      define_method(:list_items) { { ok: true } }
+    end
+
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get, path: "/items", handler: :list_items, api_class: api_class
+    )
+
+    env = Rack::MockRequest.env_for("/items", method: "GET")
+    req = RailsNinja::Request.new(env, {})
+    status, _, _ = endpoint.call(api_class.new(req), req)
+    assert_equal 503, status
+  end
 end
