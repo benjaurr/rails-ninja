@@ -156,7 +156,7 @@ module RailsNinja
         res.status = status
         headers.each { |k, v| res.headers[k] = v }
         res.body = body
-        res
+        res.to_a
       end
     end
   end
