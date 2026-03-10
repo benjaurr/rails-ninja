@@ -182,6 +182,78 @@ Each group gets its own isolated docs:
 
 Routes and schemas do not leak between groups.
 
+### Header Parameters
+
+Declare required headers at the class level (applied to all endpoints) or per-endpoint:
+
+```ruby
+class MyApi < RailsNinja::API
+  # Applied to every endpoint in this class
+  headers "X-API-KEY", "X-TENANT-ID"
+
+  get "/items", response: [ItemOut]
+  def list_items
+    Item.all
+  end
+
+  # Endpoint-level headers are merged with class-level ones
+  get "/items/:id", response: ItemOut, headers: ["X-REQUEST-ID"]
+  def get_item
+    Item.find(params[:id])
+  end
+end
+```
+
+For more control, pass hashes instead of strings:
+
+```ruby
+headers({ name: "X-API-KEY", type: "string", required: true })
+
+get "/items", headers: [{ name: "X-OPTIONAL", type: "string", required: false }]
+def list_items; end
+```
+
+If both the class and an endpoint define the same header name, the endpoint-level definition wins. All declared headers appear in the generated OpenAPI spec.
+
+### Custom Status Codes
+
+Handlers can return custom HTTP status codes in two ways:
+
+**Bare integer** -- return a status code directly with an empty body:
+
+```ruby
+delete "/items/:id"
+def delete_item
+  Item.find(params[:id]).destroy
+  204
+end
+```
+
+**Rack response tuple** -- return a `[status, headers, body]` array for full control:
+
+```ruby
+get "/secret"
+def secret
+  return RailsNinja::Response.error("Unauthorized", status: 401) unless valid_token?
+  { data: "secret stuff" }
+end
+```
+
+Rack response tuples bypass schema serialization entirely, so you can use them for error responses alongside a `response:` schema.
+
+### Scoped Routes (Rails)
+
+APIs can be mounted inside Rails `scope` blocks:
+
+```ruby
+# config/routes.rb
+Rails.application.routes.draw do
+  scope "/api/v1" do
+    mount UsersApi => "/users"
+  end
+end
+```
+
 ### OpenAPI Documentation
 
 Every mounted API automatically serves:
