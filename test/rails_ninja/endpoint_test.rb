@@ -60,4 +60,51 @@ class EndpointTest < Minitest::Test
     assert_equal 1, parsed[:id]
     assert_equal "Widget", parsed[:name]
   end
+
+  def test_header_params_from_strings
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get,
+      path: "/items",
+      handler: :list_items,
+      api_class: RailsNinja::API,
+      headers: ["X-API-KEY", "X-MESSAGE-UUID"]
+    )
+
+    assert_equal 2, endpoint.header_params.size
+    assert_equal "X-API-KEY", endpoint.header_params[0][:name]
+    assert_equal true, endpoint.header_params[0][:required]
+    assert_equal({ type: "string" }, endpoint.header_params[0][:schema])
+    assert_equal "X-MESSAGE-UUID", endpoint.header_params[1][:name]
+  end
+
+  def test_header_params_from_hashes
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get,
+      path: "/items",
+      handler: :list_items,
+      api_class: RailsNinja::API,
+      headers: [
+        { name: "X-API-KEY", type: "string", required: true },
+        { name: "X-OPTIONAL", type: "integer", required: false }
+      ]
+    )
+
+    assert_equal 2, endpoint.header_params.size
+    assert_equal "X-API-KEY", endpoint.header_params[0][:name]
+    assert_equal true, endpoint.header_params[0][:required]
+    assert_equal "X-OPTIONAL", endpoint.header_params[1][:name]
+    assert_equal false, endpoint.header_params[1][:required]
+    assert_equal({ type: "integer" }, endpoint.header_params[1][:schema])
+  end
+
+  def test_header_params_default_to_empty
+    endpoint = RailsNinja::Endpoint.new(
+      verb: :get,
+      path: "/items",
+      handler: :list_items,
+      api_class: RailsNinja::API
+    )
+
+    assert_equal [], endpoint.header_params
+  end
 end

@@ -46,8 +46,8 @@ module RailsNinja
               operation[:requestBody] = build_request_body(endpoint.request_schema)
             end
 
-            path_params = extract_path_params(path)
-            operation[:parameters] = path_params if path_params.any?
+            params = extract_path_params(path) + extract_header_params(endpoint)
+            operation[:parameters] = params if params.any?
 
             paths[openapi_path][verb] = operation
           end
@@ -87,6 +87,14 @@ module RailsNinja
       def extract_path_params(path)
         path.scan(/:(\w+)/).flatten.map do |param|
           { name: param, in: "path", required: true, schema: { type: "string" } }
+        end
+      end
+
+      def extract_header_params(endpoint)
+        return [] unless endpoint.header_params&.any?
+
+        endpoint.header_params.map do |h|
+          { name: h[:name], in: "header", required: h[:required], schema: h[:schema] }
         end
       end
 

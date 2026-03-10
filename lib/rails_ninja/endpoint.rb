@@ -1,9 +1,9 @@
 module RailsNinja
   class Endpoint
     attr_reader :verb, :path, :handler, :api_class,
-                :request_schema, :response_schema, :tags, :summary
+                :request_schema, :response_schema, :tags, :summary, :header_params
 
-    def initialize(verb:, path:, handler:, api_class:, request: nil, response: nil, tags: nil, summary: nil)
+    def initialize(verb:, path:, handler:, api_class:, request: nil, response: nil, tags: nil, summary: nil, headers: nil)
       @verb = verb
       @path = path
       @handler = handler
@@ -12,6 +12,7 @@ module RailsNinja
       @response_schema = response
       @tags = tags || [api_class.name&.gsub(/Api$/, "")].compact
       @summary = summary || handler.to_s.tr("_", " ").capitalize
+      @header_params = parse_headers(headers)
     end
 
     def call(api_instance, request)
@@ -38,6 +39,18 @@ module RailsNinja
       raise ValidationError, errors if errors.any?
 
       request.validated_data = coerced
+    end
+
+    def parse_headers(headers)
+      return [] if headers.nil?
+
+      Array(headers).map do |h|
+        if h.is_a?(String)
+          { name: h, required: true, schema: { type: "string" } }
+        elsif h.is_a?(Hash)
+          { name: h[:name], required: h.fetch(:required, true), schema: { type: h.fetch(:type, "string") } }
+        end
+      end.compact
     end
 
     def serialize_response(result)
